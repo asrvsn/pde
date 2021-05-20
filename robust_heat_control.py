@@ -91,20 +91,21 @@ def controlled_system(
 	return X, y0, yd, sol.t, sol.y.T
 
 if __name__ == '__main__':
-	diffusivity = lambda x: 0.1
+	# diffusivity = lambda x: 0.1
+	diffusivity = lambda b: (lambda x: 0.1 + b*x)
 	initial = unit_bump
 	desired = lambda x: 0.15+0.03*np.sin(12*x)
-	nominal = 0.1
+	nominal = lambda b: 0.1 + b/2
 	disturbances = [0, 0.01, 0.05, 0.075]
 	tf = 0.225
 
 	fig, axs = plt.subplots(nrows=len(disturbances)+1, ncols=5, figsize=(12,12))
 
-	X, y0, ts, ys = uncontrolled_system(1000, diffusivity, initial, tf, 5)
+	X, y0, ts, ys = uncontrolled_system(1000, diffusivity(0.05), initial, tf, 5)
 	ymin, ymax = y0.min(), y0.max() + 1e-2
 	for i in range(ys.shape[0]):
 		if i == 0:
-			axs[0][i].set_ylabel(f'uncontrolled')
+			axs[0][i].set_ylabel(f'uncontrolled\n $B=0.05$')
 		axs[0][i].plot(X, ys[i], color='red', label='actual')
 		# axs[0][i].plot(X, yd, color='blue', label='desired')
 		axs[0][i].set_title(f't = {"{:.2e}".format(ts[i])}')
@@ -113,11 +114,11 @@ if __name__ == '__main__':
 
 
 	for j, disturbance in enumerate(disturbances):
-		X, y0, yd, ts, ys = controlled_system(1000, diffusivity, nominal + disturbance, initial, desired, tf, 5)
+		X, y0, yd, ts, ys = controlled_system(1000, diffusivity(disturbance), nominal(disturbance), initial, desired, tf, 5)
 		ymin, ymax = y0.min(), y0.max() + 1e-2
 		for i in range(ys.shape[0]):
 			if i == 0:
-				axs[j+1][i].set_ylabel(f'uncertainty: {disturbance}')
+				axs[j+1][i].set_ylabel(f'controlled\n $B={disturbance}$')
 			axs[j+1][i].plot(X, yd, color='blue', label='reference')
 			axs[j+1][i].plot(X, ys[i], color='red', label='actual')
 			axs[j+1][i].set_xlabel(f'rmse:{"{:.3e}".format(rmse(ys[i], yd))}')
